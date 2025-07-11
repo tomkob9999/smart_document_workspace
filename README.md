@@ -130,9 +130,3 @@ All core processing happens in-browser. Only user queries and context snippets a
 * Smart query suggestions
 
 © 2025 Tomio Kobayashi
-
-© 2025 Tomio Kobayashi
-
----
-
-Let me know if you want a downloadable `.md` version or if you'd like to adjust the tone even further (e.g., more technical, more instructional, etc.).
