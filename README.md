@@ -4,9 +4,7 @@ Smart Document Workspace is a client-side document platform designed to enhance 
 
 This tool is useful for researchers, business professionals, and students who need fast, context-aware access to their materials without relying on external servers.
 
-<img width="460" height="418" alt="スクリーンショット 2025-07-11 23 49 27" src="https://github.com/user-attachments/assets/cebe0400-fc36-4783-9991-3b6c0f5bb15a" />
-
-*image by DALL-e 3
+<img width="281" height="292" alt="image" src="https://github.com/user-attachments/assets/8d772757-6e0c-424b-ae07-1fa5173e994a" />
 
 ---
 
