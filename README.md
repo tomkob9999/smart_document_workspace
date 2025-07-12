@@ -13,7 +13,7 @@ This tool is useful for researchers, business professionals, and students who ne
 ### Document Management
 
 * **Multiple Workspaces:** Organize content by project or topic.
-* **Drag-and-Drop Upload:** Supports TXT, PDF, DOC, DOCX, and MD formats.
+* **Drag-and-Drop Upload:** Supports TXT, MD (tested), PDF, DOC, DOCX (not tested) and formats.
 * **Instant Processing:** Documents are vectorized in real-time.
 * **Organized Library:** Displays uploaded documents with relevant metadata.
 
