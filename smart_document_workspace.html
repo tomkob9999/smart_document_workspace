@@ -585,6 +585,10 @@
                         <i class="fas fa-upload"></i>
                         Upload Docs
                     </button>
+                    <button id="doc-update-mode-btn" class="btn btn-primary flex items-center gap-2">
+                        <i class="fas fa-edit"></i>
+                        Update Mode
+                    </button>
                     <button id="clear-history-btn" class="btn btn-secondary flex items-center gap-2">
                         <i class="fas fa-trash"></i>
                         Clear History
@@ -885,6 +889,92 @@
         </div>
     </div>
     
+    <!-- Document Update Mode Modal -->
+    <div id="doc-update-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-gray-800">Document Update Mode</h2>
+                <button id="close-doc-update" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- File Upload Section -->
+            <div class="settings-section">
+                <h3 class="settings-title">
+                    <i class="fas fa-file-text"></i>
+                    Upload Documents (TXT/MD only)
+                </h3>
+                <div id="doc-update-drop-zone" class="file-drop-zone mb-4">
+                    <div class="text-center">
+                        <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-600 mb-2">Drag & drop TXT or MD files here or click to select</p>
+                        <p class="text-sm text-gray-500">Only TXT and MD files are supported</p>
+                        <button id="select-update-files" class="btn btn-primary mt-4">
+                            <i class="fas fa-file-plus mr-2"></i>
+                            Select Files
+                        </button>
+                    </div>
+                </div>
+                
+                <input type="file" id="doc-update-file-input" multiple accept=".txt,.md" style="display: none;">
+                
+                <div id="selected-update-files" class="file-list" style="display: none;">
+                    <h4 class="font-semibold text-gray-700 mb-2">Selected Files:</h4>
+                    <div id="update-file-items"></div>
+                </div>
+            </div>
+            
+            <!-- New Information Section -->
+            <div class="settings-section">
+                <h3 class="settings-title">
+                    <i class="fas fa-plus-circle"></i>
+                    New Information/Facts
+                </h3>
+                <div class="form-group">
+                    <label class="form-label">Enter new facts or events to update your documents:</label>
+                    <textarea id="new-information-input" class="form-input" rows="6" 
+                              placeholder="Example: JohnnyB had no creativity and always mimicked others."></textarea>
+                    <p class="text-sm text-gray-500 mt-2">This information will be used to update the content of your documents.</p>
+                </div>
+            </div>
+            
+            <!-- Update Progress -->
+            <div id="update-progress" style="display: none;">
+                <div class="progress-bar">
+                    <div id="update-progress-fill" class="progress-fill" style="width: 0%"></div>
+                </div>
+                <p id="update-progress-text" class="text-sm text-gray-600 text-center mt-2">Processing...</p>
+            </div>
+            
+            <!-- Updated Documents Preview -->
+            <div id="updated-documents-section" style="display: none;">
+                <div class="settings-section">
+                    <h3 class="settings-title">
+                        <i class="fas fa-eye"></i>
+                        Updated Documents Preview
+                    </h3>
+                    <div id="updated-documents-preview" class="bg-gray-50 p-4 rounded-lg max-h-96 overflow-y-auto">
+                        <!-- Updated documents will be displayed here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex gap-3 mt-6">
+                <button id="update-documents-btn" class="btn btn-primary flex-1">
+                    <i class="fas fa-magic mr-2"></i>
+                    Update Documents
+                </button>
+                <button id="download-updated-btn" class="btn btn-secondary" style="display: none;">
+                    <i class="fas fa-download mr-2"></i>
+                    Download Updated Documents
+                </button>
+                <button id="cancel-doc-update" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
     <script>
         // Initialize PDF.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -910,6 +1000,7 @@
                     avgResponseTime: 0
                 };
                 this.recentFiles = [];
+                this.documentUpdateMode = new DocumentUpdateMode(this);
                 
                 this.init();
             }
@@ -1003,6 +1094,11 @@
                 
                 document.getElementById('upload-btn').addEventListener('click', () => {
                     this.processDocuments();
+                });
+                
+                // Document Update Mode
+                document.getElementById('doc-update-mode-btn').addEventListener('click', () => {
+                    this.documentUpdateMode.showModal();
                 });
                 
                 // Chat - 日本語入力対応
@@ -2131,6 +2227,343 @@
                         }
                     }
                 };
+            }
+        }
+        
+        // Document Update Mode Class
+        class DocumentUpdateMode {
+            constructor(workspace) {
+                this.workspace = workspace;
+                this.selectedFiles = [];
+                this.updatedDocuments = [];
+                this.setupEventListeners();
+            }
+            
+            setupEventListeners() {
+                // Modal controls
+                document.getElementById('close-doc-update').addEventListener('click', () => {
+                    this.hideModal();
+                });
+                
+                document.getElementById('cancel-doc-update').addEventListener('click', () => {
+                    this.hideModal();
+                });
+                
+                // File selection
+                document.getElementById('select-update-files').addEventListener('click', () => {
+                    document.getElementById('doc-update-file-input').click();
+                });
+                
+                document.getElementById('doc-update-file-input').addEventListener('change', () => {
+                    this.handleFileSelection();
+                });
+                
+                // Update documents
+                document.getElementById('update-documents-btn').addEventListener('click', () => {
+                    this.updateDocuments();
+                });
+                
+                // Download updated documents
+                document.getElementById('download-updated-btn').addEventListener('click', () => {
+                    this.downloadUpdatedDocuments();
+                });
+                
+                // Drag and drop
+                const dropZone = document.getElementById('doc-update-drop-zone');
+                dropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('dragover');
+                });
+                
+                dropZone.addEventListener('dragleave', () => {
+                    dropZone.classList.remove('dragover');
+                });
+                
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('dragover');
+                    const files = Array.from(e.dataTransfer.files);
+                    
+                    // Filter only TXT and MD files
+                    const validFiles = files.filter(file => {
+                        const extension = file.name.split('.').pop().toLowerCase();
+                        return extension === 'txt' || extension === 'md';
+                    });
+                    
+                    if (validFiles.length !== files.length) {
+                        this.workspace.showNotification('Only TXT and MD files are supported', 'error');
+                    }
+                    
+                    if (validFiles.length > 0) {
+                        const dt = new DataTransfer();
+                        validFiles.forEach(file => dt.items.add(file));
+                        document.getElementById('doc-update-file-input').files = dt.files;
+                        this.handleFileSelection();
+                    }
+                });
+                
+                // Modal click outside to close
+                document.getElementById('doc-update-modal').addEventListener('click', (e) => {
+                    if (e.target === e.currentTarget) {
+                        this.hideModal();
+                    }
+                });
+            }
+            
+            showModal() {
+                if (!this.workspace.openaiApiKey) {
+                    this.workspace.showNotification('Please configure your OpenAI API key in settings first', 'error');
+                    return;
+                }
+                
+                document.getElementById('doc-update-modal').classList.add('show');
+                this.resetModal();
+            }
+            
+            hideModal() {
+                document.getElementById('doc-update-modal').classList.remove('show');
+                this.resetModal();
+            }
+            
+            resetModal() {
+                // Reset file input
+                document.getElementById('doc-update-file-input').value = '';
+                document.getElementById('selected-update-files').style.display = 'none';
+                
+                // Reset new information input
+                document.getElementById('new-information-input').value = '';
+                
+                // Hide progress and results
+                document.getElementById('update-progress').style.display = 'none';
+                document.getElementById('updated-documents-section').style.display = 'none';
+                document.getElementById('download-updated-btn').style.display = 'none';
+                
+                // Reset internal state
+                this.selectedFiles = [];
+                this.updatedDocuments = [];
+            }
+            
+            handleFileSelection() {
+                const files = Array.from(document.getElementById('doc-update-file-input').files);
+                this.selectedFiles = files;
+                
+                if (files.length === 0) {
+                    document.getElementById('selected-update-files').style.display = 'none';
+                    return;
+                }
+                
+                // Display selected files
+                const container = document.getElementById('selected-update-files');
+                const itemsContainer = document.getElementById('update-file-items');
+                
+                container.style.display = 'block';
+                itemsContainer.innerHTML = '';
+                
+                files.forEach((file, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'file-item';
+                    item.innerHTML = `
+                        <div class="flex-1">
+                            <div class="font-medium">${file.name}</div>
+                            <div class="text-sm text-gray-500">${this.formatFileSize(file.size)}</div>
+                        </div>
+                        <button onclick="window.workspace.documentUpdateMode.removeFile(${index})" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    itemsContainer.appendChild(item);
+                });
+            }
+            
+            removeFile(index) {
+                const dt = new DataTransfer();
+                Array.from(document.getElementById('doc-update-file-input').files).forEach((file, i) => {
+                    if (i !== index) {
+                        dt.items.add(file);
+                    }
+                });
+                document.getElementById('doc-update-file-input').files = dt.files;
+                this.handleFileSelection();
+            }
+            
+            async updateDocuments() {
+                const files = this.selectedFiles;
+                const newInformation = document.getElementById('new-information-input').value.trim();
+                
+                if (files.length === 0) {
+                    this.workspace.showNotification('Please select at least one file', 'error');
+                    return;
+                }
+                
+                if (!newInformation) {
+                    this.workspace.showNotification('Please enter new information', 'error');
+                    return;
+                }
+                
+                // Show progress
+                document.getElementById('update-progress').style.display = 'block';
+                const progressFill = document.getElementById('update-progress-fill');
+                const progressText = document.getElementById('update-progress-text');
+                
+                this.updatedDocuments = [];
+                
+                try {
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        const progress = ((i + 1) / files.length) * 100;
+                        
+                        progressFill.style.width = progress + '%';
+                        progressText.textContent = `Processing ${file.name}... (${i + 1}/${files.length})`;
+                        
+                        // Read file content
+                        const originalContent = await this.readFileContent(file);
+                        
+                        // Create prompt for LLM
+                        const prompt = this.createUpdatePrompt(newInformation, originalContent);
+                        
+                        // Call OpenAI API
+                        const updatedContent = await this.callOpenAI(prompt);
+                        
+                        // Store updated document
+                        this.updatedDocuments.push({
+                            originalName: file.name,
+                            originalContent: originalContent,
+                            updatedContent: updatedContent,
+                            newInformation: newInformation
+                        });
+                    }
+                    
+                    // Hide progress and show results
+                    document.getElementById('update-progress').style.display = 'none';
+                    this.displayUpdatedDocuments();
+                    
+                    this.workspace.showNotification(`Successfully updated ${files.length} document(s)!`, 'success');
+                    
+                } catch (error) {
+                    console.error('Error updating documents:', error);
+                    this.workspace.showNotification('Failed to update documents: ' + error.message, 'error');
+                    document.getElementById('update-progress').style.display = 'none';
+                }
+            }
+            
+            async readFileContent(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = reject;
+                    reader.readAsText(file);
+                });
+            }
+            
+            createUpdatePrompt(newInformation, documentContent) {
+                return `Please update the following document based on new facts provided.
+
+Instructions:
+
+1. Keep the original language of the document unchanged (e.g., if it's in English, the output should remain in English).
+
+2. You may interpret the new facts written in any language, but apply them to update the document in its original language.
+
+3. Preserve the format and structure of the document (headings, bullet points, numbering, etc.).
+
+4. Replace outdated or incorrect information based on the new facts.
+
+5. Remove obsolete content that contradicts the updated facts.
+
+6. Ensure internal consistency across all sections.
+
+7. Do not add any commentary—just return the fully updated document only.
+
+Original Document:
+${documentContent}
+
+New Facts:
+${newInformation}`;
+
+            }
+            
+            async callOpenAI(prompt) {
+                const response = await this.workspace.openaiClient.chat.completions.create({
+                    model: 'gpt-3.5-turbo',
+                    messages: [
+                        { role: 'user', content: prompt }
+                    ],
+                    temperature: 0.3,
+                    max_tokens: 2000
+                });
+                
+                return response.choices[0].message.content;
+            }
+            
+            displayUpdatedDocuments() {
+                const section = document.getElementById('updated-documents-section');
+                const preview = document.getElementById('updated-documents-preview');
+                
+                section.style.display = 'block';
+                preview.innerHTML = '';
+                
+                this.updatedDocuments.forEach((doc, index) => {
+                    const docElement = document.createElement('div');
+                    docElement.className = 'mb-6 p-4 border border-gray-200 rounded-lg';
+                    docElement.innerHTML = `
+                        <h4 class="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                            <i class="fas fa-file-text"></i>
+                            ${doc.originalName}
+                        </h4>
+                        <div class="bg-white p-3 rounded border max-h-48 overflow-y-auto">
+                            <pre class="whitespace-pre-wrap text-sm">${doc.updatedContent}</pre>
+                        </div>
+                    `;
+                    preview.appendChild(docElement);
+                });
+                
+                // Show download button
+                document.getElementById('download-updated-btn').style.display = 'inline-flex';
+            }
+            
+            downloadUpdatedDocuments() {
+                if (this.updatedDocuments.length === 0) {
+                    this.workspace.showNotification('No updated documents to download', 'error');
+                    return;
+                }
+                
+                if (this.updatedDocuments.length === 1) {
+                    // Single file download
+                    const doc = this.updatedDocuments[0];
+                    this.downloadSingleFile(doc.updatedContent, doc.originalName);
+                } else {
+                    // Multiple files - create a zip or download individually
+                    this.downloadMultipleFiles();
+                }
+            }
+            
+            downloadSingleFile(content, filename) {
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+            
+            downloadMultipleFiles() {
+                // Download each file individually
+                this.updatedDocuments.forEach(doc => {
+                    setTimeout(() => {
+                        this.downloadSingleFile(doc.updatedContent, doc.originalName);
+                    }, 100); // Small delay between downloads
+                });
+                
+                this.workspace.showNotification(`Downloading ${this.updatedDocuments.length} files...`, 'success');
+            }
+            
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
             }
         }
         
