@@ -2,7 +2,9 @@
 
 Smart Document Workspace is a client-side document platform designed to enhance how users interact with their files. It uses Retrieval-Augmented Generation (RAG) technology to provide contextual AI-assisted answers based on your own documents — all processed locally in the browser for better privacy.
 
-> Innovative Local-First RAG Architecture: Unlike traditional RAG systems that rely on expensive cloud vector databases (Pinecone, Weaviate, Qdrant), this application generates and stores all document embeddings locally using Transformers.js and IndexedDB, eliminating network latency, API costs, and privacy concerns. With sub-5ms vector searches, zero infrastructure requirements, and no-API-server-access functionality, users enjoy instant responses while maintaining full data sovereignty—transforming RAG from a costly, server-dependent technology into an accessible, privacy-first solution that scales infinitely without increasing operational costs.
+>  Caution: This application requires an OpenAI API Key, and it requires linking a paid account, and charges are based on a pay-as-you-go system calculated by how much you use it
+
+Innovative Local-First RAG Architecture: Unlike traditional RAG systems that rely on expensive cloud vector databases (Pinecone, Weaviate, Qdrant), this application generates and stores all document embeddings locally using Transformers.js and IndexedDB, eliminating network latency, API costs, and privacy concerns. With sub-5ms vector searches, zero infrastructure requirements, and no-API-server-access functionality, users enjoy instant responses while maintaining full data sovereignty—transforming RAG from a costly, server-dependent technology into an accessible, privacy-first solution that scales infinitely without increasing operational costs.
 
 <img width="281" height="292" alt="image" src="https://github.com/user-attachments/assets/8d772757-6e0c-424b-ae07-1fa5173e994a" />
 
